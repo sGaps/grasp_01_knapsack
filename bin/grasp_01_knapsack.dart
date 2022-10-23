@@ -1,8 +1,8 @@
-//import 'dart:cli';
 import 'dart:io';
 import 'dart:convert' as convert;
 import 'dart:math' as math;
 
+// TODO: Split this file into libraries
 // local:
 import 'package:grasp_01_knapsack/grasp_01_knapsack.dart' as grasp_01_knapsack;
 
@@ -19,38 +19,14 @@ class Problem {
   }
 }
 
-class Instance {
-  int id;
-  //int limit;
-  Problem problem;
+// class Instance {
+//   int id;
+//   //int limit;
+//   Problem problem;
 
-  Instance(this.id, this.problem );
-  //Instance(this.id, this.limit, this.problem );
-}
-
-// Solution is only a list of Booleans
-
-Future<Problem> problemFromStream(Stream<List<int>> source) async {
-  final RegExp intoWords = RegExp(r"\s");
-  Stream<List<String>> stream = source.transform(convert.utf8.decoder)
-    .transform(convert.LineSplitter())
-    .map( (line) => line.split(intoWords) );
-
-  List<List<String>> words = await stream.toList();
-
-  int n = int.parse( words.first[0] );
-  double capacity = double.parse( words.first[1] );
-  
-  List<double> weights = List.filled(n, 0);
-  List<double> values  = List.filled(n, 0);
-
-  for(int i = 1; i <= values.length ; i += 1){
-    values[i-1]  = double.parse(words[i][0]);
-    weights[i-1] = double.parse(words[i][1]);
-  }
-
-  return Future( () => Problem(capacity, weights, values));
-}
+//   Instance(this.id, this.problem );
+//   //Instance(this.id, this.limit, this.problem );
+// }
 
 class Solution {
   List<bool> objects;
@@ -59,19 +35,18 @@ class Solution {
   Solution(this.objects);
 
   factory Solution.withCapacity(int capacity){
+    // A raw solution is only a bunch of bool values.
     List<bool> raw = List.filled(capacity, false);
     return Solution(raw);
   }
 
   factory Solution.random(int length){
     const minimumPercent = 10.0;
-    const maximumPercent = 40.0;
+    const maximumPercent = 90.0;
 
     math.Random generator = math.Random();
     int minimumOnes = (length.toDouble() * minimumPercent ~/ 100).toInt();
     int maximumOnes = (length.toDouble() * maximumPercent ~/ 100).toInt();
-    // int minimumOnes = length ~/ minimumPercent.floor();
-    // int maximumOnes = length ~/ maximumPercent.floor();
     int newOnes     = generator.nextInt(maximumOnes - minimumOnes) + (minimumOnes + 1);
     Solution s = Solution.withCapacity(length);
 
@@ -164,7 +139,6 @@ class Solution {
 
   bool hasElements(){
     return oneCount > 0;
-    //return objects.isNotEmpty && objects.any( (e) => e );
   }
 
   Set<Solution> neighborhood(Problem p){
@@ -173,6 +147,7 @@ class Solution {
 
     // "Graph search"
     for(int i = 0; i < trip.objects.length ; i += 1){
+      // Ignore when the element has been marked as explored already.
       if(trip[i]){
         continue;
       }
@@ -190,8 +165,44 @@ class Solution {
     return others;
   }
 
+  List<double> readableWeights(Problem p) {
+      List<double> weights  = [];
+      for(int i = 0; i < objects.length; i += 1){
+        if(objects[i]){
+          weights.add(p.weights[i]);
+        } else {
+          weights.add(0);
+        }
+      }
+      return weights;
+  }
 
-  // Dart specific.
+  List<double> readableProfits(Problem p) {
+      List<double> values  = [];
+      for(int i = 0; i < objects.length; i += 1){
+        if(objects[i]){
+          values.add(p.values[i]);
+        } else {
+          values.add(0);
+        }
+      }
+      return values;
+  }
+
+  List<int> enabledIndexes(Problem p) {
+      List<int> indexes  = [];
+      for(int i = 0; i < objects.length; i += 1){
+        if(objects[i]){
+          indexes.add(i);
+        }
+      }
+      return indexes;
+  }
+
+
+  // ----------------------
+  // Dart specific features
+  // ----------------------
 
   bool operator [](int index){
     return objects[index];
@@ -238,52 +249,38 @@ class Solution {
   String toString() {
       return "Solution(objects = $objects)";
   }
-
-  List<double> readableWeights(Problem p) {
-      List<double> weights  = [];
-      for(int i = 0; i < objects.length; i += 1){
-        if(objects[i]){
-          weights.add(p.weights[i]);
-        } else {
-          weights.add(0);
-        }
-      }
-      return weights;
-  }
-
-  List<double> readableProfits(Problem p) {
-      List<double> values  = [];
-      for(int i = 0; i < objects.length; i += 1){
-        if(objects[i]){
-          values.add(p.values[i]);
-        } else {
-          values.add(0);
-        }
-      }
-      return values;
-  }
-
-
-  List<int> enabledIndexes(Problem p) {
-      List<int> indexes  = [];
-      for(int i = 0; i < objects.length; i += 1){
-        if(objects[i]){
-          indexes.add(i);
-        }
-      }
-      return indexes;
-  }
 }
 
 // Sometimes 0.7 is better than 0.8
-const double ALPHA = 0.74;
+const double ALPHA        = 0.85;
+const int BENCHMARK_LIMIT = 10;
+const int GRASP_LIMIT     = 10000;
+
+Future<Problem> problemFromStream(Stream<List<int>> source) async {
+  final RegExp intoWords = RegExp(r"\s");
+  Stream<List<String>> stream = source.transform(convert.utf8.decoder)
+    .transform(convert.LineSplitter())
+    .map( (line) => line.split(intoWords) );
+
+  List<List<String>> words = await stream.toList();
+
+  int n = int.parse( words.first[0] );
+  double capacity = double.parse( words.first[1] );
+  
+  List<double> weights = List.filled(n, 0);
+  List<double> values  = List.filled(n, 0);
+
+  for(int i = 1; i <= values.length ; i += 1){
+    values[i-1]  = double.parse(words[i][0]);
+    weights[i-1] = double.parse(words[i][1]);
+  }
+
+  return Future( () => Problem(capacity, weights, values));
+}
 
 double greed(double cmin, double cmax){
   return cmin + ALPHA * (cmax - cmin);
 }
-
-const int BENCHMARK_LIMIT = 10;
-const int GRASP_LIMIT     = 10000;
 
 Solution buildRCL(Solution candidates, Problem p){
   double cmin = candidates.minimumValue(p);
@@ -298,9 +295,7 @@ Solution buildRCL(Solution candidates, Problem p){
   return rcl;
 }
 
-// TODO: Do I actually need instance? I could pass a single problem...
-Solution generateSolution(Instance instance){
-  Problem p = instance.problem;
+Solution generateSolution(Problem p){
   Solution candidates = Solution.random(p.weights.length); // Initialize candidates.
   Solution solution = Solution.withCapacity(p.weights.length);
   Solution rcl;
@@ -312,7 +307,6 @@ Solution generateSolution(Instance instance){
   while(candidates.hasElements()){
     rcl = buildRCL(candidates, p);
 
-    // TODO: Choice random number which is already set in candidates.
     index = rcl.randomIndexChoice();
     if( index == null ){
       break;
@@ -330,9 +324,8 @@ Solution generateSolution(Instance instance){
   return solution;
 }
 
-Solution localSearch(Instance instance, Solution startSolution){
+Solution localSearch(Problem p, Solution startSolution){
   Solution localOptimum = startSolution;
-  Problem p = instance.problem;
   Set<Solution> others;
   double bestProfit;
 
@@ -360,15 +353,14 @@ Solution localSearch(Instance instance, Solution startSolution){
   return localOptimum;
 }
 
-Solution grasp(Instance instance){
-  Problem  p        = instance.problem;
+Solution grasp(Problem p){
   Solution solution = Solution.withCapacity(p.weights.length);
   Solution bestSolution = Solution.withCapacity(p.weights.length);
   Solution localSolution = Solution.withCapacity(p.weights.length);
 
   for(int i = 0; i < GRASP_LIMIT; i += 1){
-    solution = generateSolution(instance);
-    localSolution = localSearch(instance, solution);
+    solution = generateSolution(p);
+    localSolution = localSearch(p, solution);
 
     if( localSolution.calculateProfit(p) > bestSolution.calculateProfit(p) ){
       bestSolution = localSolution;
@@ -378,72 +370,150 @@ Solution grasp(Instance instance){
   return bestSolution;
 }
 
-void benchmark(Instance instance){
-  Problem p = instance.problem;
-    Solution s;
+void benchmark(Problem p, FormatConfig format){
+  Solution s;
 
-  // TODO: Finish
-  print('Instance');
-  print('Problem: ${instance.problem}');
+  if( format.showProblem ){
+    print('[SYS] Benchmark of Problem: $p');
+    print('');
+  }
+
+  print('[SYS] Tuning parameters');
+  print('  ALPHA: $ALPHA');
+  print('  Max. GRASP iterations: $GRASP_LIMIT');
+  print('  Max. Benchmark iterations: $BENCHMARK_LIMIT');
+  print('');
+
   for(int i = 0; i < BENCHMARK_LIMIT; i += 1){
     final Stopwatch clock = Stopwatch();
     clock.start();
-    s = grasp(instance);
+    s = grasp(p);
     clock.stop();
-    //print('Solution: $s');
 
-    print('Selected Indexes: ${s.enabledIndexes(p)}');
-    print('Weight:   ${s.calculateWeight(p)}');
-    //print('ws.human: ${s.readableWeights(p)}');
 
-    print('Profit:   ${s.calculateProfit(p)}');
-    //print('ps.human: ${s.readableProfits(p)}');
-    print('Elapsed Time: ${clock.elapsed}');
+    print('[BENCH] Resume of run $i');
+    print('  Weight: ${s.calculateWeight(p)}');
+    print('  Profit: ${s.calculateProfit(p)}');
+    print('  Elapsed Time: ${clock.elapsed}');
+    print('  Selected Indexes: ${s.enabledIndexes(p)}');
+
+    if( format.rawSolution ){
+      print('  Solution found (raw format): $s');
+    }
+
+    if( format.complete ){
+      print('  Weights(double): ${s.readableWeights(p)}');
+      print('  Values(double):  ${s.readableProfits(p)}');
+    }
+
     print('');
 
   }
 }
 
-void main(List<String> arguments) async {
-  print('Hello world: ${grasp_01_knapsack.calculate()}!');
-  print('Args: $arguments!');
-
-  Stream<List<int>> source = stdin;
-  if (arguments.length >= 2 && arguments[0] == '-f' && arguments[1].isNotEmpty ) {
-    File file = File(arguments[1]);
-    source = file.openRead();
-  }
-
-  Instance instance = Instance(1, await problemFromStream(source));
-  benchmark(instance);
-
-  // var x = {[[1,2,3], [1,2], [], [1,2,3]]};
-  // print(x);
-
-  // var y = {Solution([true,false,true]), Solution([true,false]), Solution([true]), Solution([true,false,true])};
-  // print(y);
-
-  //////////
-  // Stream<List<int>> source = stdin;
-  // if (arguments.length >= 2 && arguments[0] == '-f' && arguments[1].isNotEmpty ) {
-  //   File file = File(arguments[1]);
-  //   source = file.openRead();
-  // }
-
-  // Problem p = await problemFromStream(source);
-  // print("$p");
-
-  // Solution solution = List.filled(p.weights.length, false);
+void showVersion(){
+  print('GRASP for 0/1 Knapsack Problem. version 0.1');
 }
 
-// Solution grasp(Instance instance){
-//   Problem p = instance.problem;
+void showHelp(){
+  showVersion();
+  print(
+"""
+  Usage:
+    grasp [output-formats] [arguments] [values]
 
-//   Solution solution = List.filled(p.weights.length, false);
-//   double   profit   = 0.0;
+    Arguments
+      (-f|--file) <file>  opens a file and read.
+      (-I|--stdin)        read input from stdin.
+      (-h|--help)         shows program version and this help.
+      (-d|--debug-args)   prints the arguments read by the CLI.
+      (-v|--version)      shows program version.
 
-//   Solution bestSolution = List.filled(p.weights.length, false);
-//   double   bestProfit   = 0.0;
+    Output format arguments
+      --complete          shows complete results for weights and values.
+      --raw-solution      prints the raw solution along the short version.
+      --no-problem        doesn't print the probleme at the begining.
 
-//   return bestSolution;
-// }
+    Input format:
+    ```txt
+      N capacity
+      value1 weight1
+      value2 weight2
+      ...
+      valueN weightN
+    ```
+
+      where N is the number of elements registered into
+      the problem, capacity is the knapsack weight capacity,
+      value<i> and weight<i> are the relevant values of the
+      element at the index <i>.
+""");
+}
+
+class FormatConfig{
+  bool complete    = false;
+  bool rawSolution = false;
+  bool showProblem = true;
+
+  FormatConfig(this.complete, this.rawSolution, this.showProblem);
+}
+
+// Process CLI arguments and run benchmarks
+void main(List<String> arguments) async {
+  if(arguments.isEmpty){
+    showHelp();
+    return;
+  }
+
+  Set<String> args = arguments.toSet();
+  if( args.contains('-d') || args.contains('--debug-args') ){
+    print('[DEBUG] CLI arguments: $arguments');
+  }
+
+  if( args.contains('-v') || args.contains('--version')){
+    showVersion();
+    return;
+  }
+
+  if( args.contains('-h') || args.contains('--help')){
+    showHelp();
+    return;
+  }
+
+  Stream<List<int>>? source;
+  if( args.contains('-I') || args.contains('--stdin') ){
+    source = stdin;
+    print('[INFO] Reading from Stdin');
+    print('');
+  } else {
+    int specifierIndex = arguments.indexOf('-f');
+    if( specifierIndex == -1 ){
+      specifierIndex = arguments.indexOf('--file');
+    }
+
+    if( specifierIndex != -1 ){
+      if( !(specifierIndex + 1 < arguments.length) ){
+        return Future.error('File path not specified');
+      }
+
+      File file = File(arguments[specifierIndex + 1]);
+      if( !(await file.exists()) ){
+        return Future.error('Invalid file path "${arguments[specifierIndex + 1]}"');
+      }
+
+      source = file.openRead();
+      print('[INFO] Reading from "${arguments[specifierIndex + 1]}"');
+      print('');
+    }
+  }
+
+  FormatConfig format = FormatConfig(
+    arguments.contains('--complete'),
+    arguments.contains('--raw-solution'),
+    !arguments.contains('--no-problem'));
+
+  //Instance instance = Instance(1, await problemFromStream(source));
+  if( source != null ){
+    benchmark(await problemFromStream(source), format);
+  }
+}
