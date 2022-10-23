@@ -3,7 +3,6 @@ import 'dart:convert' as convert;
 import 'dart:math' as math;
 
 // TODO: Split this file into libraries
-// local:
 import 'package:grasp_01_knapsack/grasp_01_knapsack.dart' as grasp_01_knapsack;
 
 class Problem {
@@ -18,15 +17,6 @@ class Problem {
       return "Problem(capacity = $capacity, weights = $weights, values = $values)";
   }
 }
-
-// class Instance {
-//   int id;
-//   //int limit;
-//   Problem problem;
-
-//   Instance(this.id, this.problem );
-//   //Instance(this.id, this.limit, this.problem );
-// }
 
 class Solution {
   List<bool> objects;
@@ -241,7 +231,7 @@ class Solution {
     return true;
   }
   
-  // So it will use == operator
+  // We override this function so Sets will use == operator
   @override
   int get hashCode => 0;
 
@@ -255,28 +245,6 @@ class Solution {
 const double ALPHA        = 0.85;
 const int BENCHMARK_LIMIT = 10;
 const int GRASP_LIMIT     = 10000;
-
-Future<Problem> problemFromStream(Stream<List<int>> source) async {
-  final RegExp intoWords = RegExp(r"\s");
-  Stream<List<String>> stream = source.transform(convert.utf8.decoder)
-    .transform(convert.LineSplitter())
-    .map( (line) => line.split(intoWords) );
-
-  List<List<String>> words = await stream.toList();
-
-  int n = int.parse( words.first[0] );
-  double capacity = double.parse( words.first[1] );
-  
-  List<double> weights = List.filled(n, 0);
-  List<double> values  = List.filled(n, 0);
-
-  for(int i = 1; i <= values.length ; i += 1){
-    values[i-1]  = double.parse(words[i][0]);
-    weights[i-1] = double.parse(words[i][1]);
-  }
-
-  return Future( () => Problem(capacity, weights, values));
-}
 
 double greed(double cmin, double cmax){
   return cmin + ALPHA * (cmax - cmin);
@@ -296,13 +264,11 @@ Solution buildRCL(Solution candidates, Problem p){
 }
 
 Solution generateSolution(Problem p){
-  Solution candidates = Solution.random(p.weights.length); // Initialize candidates.
+  // Initialize candidates just as specified in the regular GRASP.
+  Solution candidates = Solution.random(p.weights.length);
   Solution solution = Solution.withCapacity(p.weights.length);
   Solution rcl;
   int? index = 0;
-
-  // Initialize candidates
-  // candidates = initializeCandidates(p);
 
   while(candidates.hasElements()){
     rcl = buildRCL(candidates, p);
@@ -344,10 +310,6 @@ Solution localSearch(Problem p, Solution startSolution){
     // Select the current best solution among neighbors
     bestProfit   = others.map( (s) => s.calculateProfit(p) ).reduce(math.max);
     localOptimum = others.firstWhere((s) => s.calculateProfit(p) == bestProfit);
-    //localOptimum = others.elementAt(0);
-
-    // Select any better Solution
-    //localOptimum = others.elementAt(generator.nextInt(others.length));
   }
 
   return localOptimum;
@@ -370,6 +332,36 @@ Solution grasp(Problem p){
   return bestSolution;
 }
 
+
+// --------------
+// I/O Operations
+// --------------
+
+/// Parse an stream and returns a Problem object.
+/// SEE ALSO: showHelp to see which format accepts this function.
+Future<Problem> problemFromStream(Stream<List<int>> source) async {
+  final RegExp intoWords = RegExp(r"\s");
+  Stream<List<String>> stream = source.transform(convert.utf8.decoder)
+    .transform(convert.LineSplitter())
+    .map( (line) => line.split(intoWords) );
+
+  List<List<String>> words = await stream.toList();
+
+  int n = int.parse( words.first[0] );
+  double capacity = double.parse( words.first[1] );
+  
+  List<double> weights = List.filled(n, 0);
+  List<double> values  = List.filled(n, 0);
+
+  for(int i = 1; i <= values.length ; i += 1){
+    values[i-1]  = double.parse(words[i][0]);
+    weights[i-1] = double.parse(words[i][1]);
+  }
+
+  return Future( () => Problem(capacity, weights, values));
+}
+
+/// Tries to solve the problem several times by using the grasp method.
 void benchmark(Problem p, FormatConfig format){
   Solution s;
 
@@ -480,6 +472,7 @@ void main(List<String> arguments) async {
     return;
   }
 
+  // Selects the correct stream depending on CLI parameters/flags.
   Stream<List<int>>? source;
   if( args.contains('-I') || args.contains('--stdin') ){
     source = stdin;
@@ -512,7 +505,7 @@ void main(List<String> arguments) async {
     arguments.contains('--raw-solution'),
     !arguments.contains('--no-problem'));
 
-  //Instance instance = Instance(1, await problemFromStream(source));
+  // The true works begins here
   if( source != null ){
     benchmark(await problemFromStream(source), format);
   }
