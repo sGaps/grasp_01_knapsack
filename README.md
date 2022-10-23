@@ -60,8 +60,13 @@ aquella que tiene por nombre "grasp_01_knapsack".
 2. Luego, estando en la raíz de dicha carpeta, use el comando:
 
 ```bash
+dart pub upgrade
 dart compile exe bin/grasp_01_knapsack.dart -o grasp
 ```
+
+> NOTA: es importante ejecutar `dart pub upgrade` para referescar la caché
+> del proyecto. Adicionalmente, es importante que la carpeta raíz tenga por
+> nombre "grasp_01_knapsack".
 
 ## Instrucciones de ejecucion
 
@@ -116,3 +121,11 @@ done;
 
 > *NOTA*: Debido al gran tamaño de la instancia original, se ha añadido el parámetro `--no-problem`
 > para omitir la descripción del problema al iniciar la ejecución del programa.
+
+## Generar documentación html del proyecto:
+
+Ejecute la instrucción
+
+```
+dart doc
+```
