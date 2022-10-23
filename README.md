@@ -102,7 +102,7 @@ Para automatizar el procedimiento de pruebas, pruebe los siguientes comandos de 
 ```bash
 mkdir -p output
 for i in $(ls samples/low-dimensional/* | sort --reverse);
-do ./grasp -f $i > output/run-low-dimensional.txt;
+do ./grasp -f $i >> output/run-low-dimensional.txt;
 done;
 ```
 
@@ -114,7 +114,7 @@ done;
 ```bash
 mkdir -p output
 for i in $(ls samples/large_scale/* | sort --reverse);
-do ./grasp --no-problem -f $i > output/run-large-scale.txt;
+do ./grasp --no-problem -f $i >> output/run-large-scale.txt;
 done;
 ```
 
