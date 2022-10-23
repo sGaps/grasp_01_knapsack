@@ -35,8 +35,8 @@ class Solution {
     const maximumPercent = 90.0;
 
     math.Random generator = math.Random();
-    int minimumOnes = (length.toDouble() * minimumPercent ~/ 100).toInt();
-    int maximumOnes = (length.toDouble() * maximumPercent ~/ 100).toInt();
+    int minimumOnes = length.toDouble() * minimumPercent ~/ 100;
+    int maximumOnes = length.toDouble() * maximumPercent ~/ 100;
     int newOnes     = generator.nextInt(maximumOnes - minimumOnes) + (minimumOnes + 1);
     Solution s = Solution.withCapacity(length);
 
@@ -76,6 +76,22 @@ class Solution {
     do {
       index = generator.nextInt(objects.length);
     } while (!objects[index]);
+
+    return index;
+  }
+
+  int? randomZeroIndexChoice(){
+    if( oneCount == objects.length ){
+      return null;
+    }
+    
+    math.Random generator = math.Random();
+    int index;
+
+    // Repeat until choose a set element
+    do {
+      index = generator.nextInt(objects.length);
+    } while (objects[index]);
 
     return index;
   }
@@ -132,6 +148,43 @@ class Solution {
   }
 
   Set<Solution> neighborhood(Problem p){
+    final int limit = objects.length;
+    Set<Solution> others = <Solution>{};
+    Solution trip = Solution.copy(this);
+    int? source, target;
+
+    if( !hasElements() ){
+      return others;
+    }
+
+    // "Graph search"
+    for(int i = 0; i < limit ; i += 1){
+      source = trip.randomIndexChoice();
+      target = trip.randomZeroIndexChoice();
+
+      // Totally full or totally empty, so no shift is required.
+      if( source == null || target == null ){
+        break;
+      }
+
+      // BEGIN. Flip values:
+      trip[source] = false;
+      trip[target] = true;
+
+      if( trip.calculateWeight(p) <= p.capacity ){
+        others.add(Solution.copy(trip));
+      }
+
+      // END. Flip values:
+      trip[source] = true;
+      trip[target] = false;
+    }
+
+    return others;
+  }
+
+
+  Set<Solution> neighborhoodLegacy(Problem p){
     Set<Solution> others = <Solution>{};
     Solution trip = Solution.copy(this);
 
@@ -242,12 +295,19 @@ class Solution {
 }
 
 // Sometimes 0.7 is better than 0.8
-const double ALPHA        = 0.85;
+// const double ALPHA        = 0.85;
+// const double ALPHA        = 0.30;
+// Good:
+// const double ALPHA        = 0.25;
+const double ALPHA        = 0.95;
+
 const int BENCHMARK_LIMIT = 10;
-const int GRASP_LIMIT     = 10000;
+const int GRASP_LIMIT     = 20;
 
 double greed(double cmin, double cmax){
-  return cmin + ALPHA * (cmax - cmin);
+  // FIX. maximum utility slope
+  return cmax - ALPHA * (cmax - cmin);
+  // return cmin + ALPHA * (cmax - cmin);
 }
 
 Solution buildRCL(Solution candidates, Problem p){
@@ -296,12 +356,13 @@ Solution localSearch(Problem p, Solution startSolution){
   double bestProfit;
 
   while(true) {
-    others = localOptimum.neighborhood(p);
+    // We always consider those cases where the profit is greater.
+    others = localOptimum.neighborhood(p).union( localOptimum.neighborhoodLegacy(p) );
 
-    // As we are maximizing, we are not interested on see what happens
+    // As we are maximizing, we are not interested on seeing what happens
     // with those elements that give us a lower profit.
     others.removeWhere((alternative) =>
-        alternative.calculateProfit(p) <= localOptimum.calculateProfit(p));
+       alternative.calculateProfit(p) <= localOptimum.calculateProfit(p));
 
     if(others.isEmpty){
       break;
