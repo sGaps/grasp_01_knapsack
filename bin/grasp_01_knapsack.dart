@@ -44,7 +44,7 @@ Future<Problem> problemFromStream(Stream<List<int>> source) async {
   List<double> weights = List.filled(n, 0);
   List<double> values  = List.filled(n, 0);
 
-  for(int i = 1; i < words.length; i += 1){
+  for(int i = 1; i <= values.length ; i += 1){
     values[i-1]  = double.parse(words[i][0]);
     weights[i-1] = double.parse(words[i][1]);
   }
@@ -64,6 +64,26 @@ class Solution {
   }
 
   factory Solution.random(int length){
+    const minimumPercent = 10.0;
+    const maximumPercent = 40.0;
+
+    math.Random generator = math.Random();
+    int minimumOnes = (length.toDouble() * minimumPercent ~/ 100).toInt();
+    int maximumOnes = (length.toDouble() * maximumPercent ~/ 100).toInt();
+    // int minimumOnes = length ~/ minimumPercent.floor();
+    // int maximumOnes = length ~/ maximumPercent.floor();
+    int newOnes     = generator.nextInt(maximumOnes - minimumOnes) + (minimumOnes + 1);
+    Solution s = Solution.withCapacity(length);
+
+    for(int i = 0; i < newOnes ; i += 1){
+      s[i] = true;
+    }
+
+    s.objects.shuffle();
+    return s;
+  }
+
+  factory Solution.randomLegacy(int length){
     math.Random generator = math.Random();
     Solution s = Solution.withCapacity(length);
     for(int i = 0; i < s.objects.length ; i += 1){
@@ -87,6 +107,7 @@ class Solution {
     math.Random generator = math.Random();
     int index;
 
+    // Repeat until choose a set element
     do {
       index = generator.nextInt(objects.length);
     } while (!objects[index]);
@@ -152,6 +173,11 @@ class Solution {
 
     // "Graph search"
     for(int i = 0; i < trip.objects.length ; i += 1){
+      if(trip[i]){
+        continue;
+      }
+
+      // Try this as a new solution
       trip[i] = true;
 
       if( trip.calculateWeight(p) <= p.capacity ){
@@ -236,24 +262,37 @@ class Solution {
       }
       return values;
   }
+
+
+  List<int> enabledIndexes(Problem p) {
+      List<int> indexes  = [];
+      for(int i = 0; i < objects.length; i += 1){
+        if(objects[i]){
+          indexes.add(i);
+        }
+      }
+      return indexes;
+  }
 }
 
-const double ALPHA = 0.8;
+// Sometimes 0.7 is better than 0.8
+const double ALPHA = 0.74;
 
 double greed(double cmin, double cmax){
   return cmin + ALPHA * (cmax - cmin);
 }
 
 const int BENCHMARK_LIMIT = 10;
-const int GRASP_LIMIT     = 15;
+const int GRASP_LIMIT     = 10000;
 
 Solution buildRCL(Solution candidates, Problem p){
   double cmin = candidates.minimumValue(p);
   double cmax = candidates.maximumValue(p);
+  double greedyFactor = greed(cmin, cmax);
   Solution rcl = Solution.withCapacity(p.weights.length);
 
   for(int i = 0; i < rcl.objects.length; i += 1 ){
-    rcl[i] = candidates[i] && (p.values[i] >= greed(cmin, cmax));
+    rcl[i] = candidates[i] && (p.values[i] >= greedyFactor);
   }
 
   return rcl;
@@ -295,7 +334,7 @@ Solution localSearch(Instance instance, Solution startSolution){
   Solution localOptimum = startSolution;
   Problem p = instance.problem;
   Set<Solution> others;
-  math.Random generator = math.Random();
+  double bestProfit;
 
   while(true) {
     others = localOptimum.neighborhood(p);
@@ -309,8 +348,13 @@ Solution localSearch(Instance instance, Solution startSolution){
       break;
     }
 
-    // Select any better Optimum
-    localOptimum = others.elementAt(generator.nextInt(others.length));
+    // Select the current best solution among neighbors
+    bestProfit   = others.map( (s) => s.calculateProfit(p) ).reduce(math.max);
+    localOptimum = others.firstWhere((s) => s.calculateProfit(p) == bestProfit);
+    //localOptimum = others.elementAt(0);
+
+    // Select any better Solution
+    //localOptimum = others.elementAt(generator.nextInt(others.length));
   }
 
   return localOptimum;
@@ -336,7 +380,7 @@ Solution grasp(Instance instance){
 
 void benchmark(Instance instance){
   Problem p = instance.problem;
-  Solution s;
+    Solution s;
 
   // TODO: Finish
   print('Instance');
@@ -346,12 +390,14 @@ void benchmark(Instance instance){
     clock.start();
     s = grasp(instance);
     clock.stop();
-    print('Solution: $s');
+    //print('Solution: $s');
+
+    print('Selected Indexes: ${s.enabledIndexes(p)}');
     print('Weight:   ${s.calculateWeight(p)}');
-    print('ws.human: ${s.readableWeights(p)}');
+    //print('ws.human: ${s.readableWeights(p)}');
 
     print('Profit:   ${s.calculateProfit(p)}');
-    print('ps.human: ${s.readableProfits(p)}');
+    //print('ps.human: ${s.readableProfits(p)}');
     print('Elapsed Time: ${clock.elapsed}');
     print('');
 
