@@ -39,6 +39,7 @@ void showHelp(){
 """);
 }
 
+/// Structure used to show conditional formats on `benchmark`
 class FormatConfig{
   bool complete    = false;
   bool rawSolution = false;
@@ -46,6 +47,7 @@ class FormatConfig{
 FormatConfig(this.complete, this.rawSolution, this.showProblem);
 }
 
+/// A bunch of relevant data related with the program initialization.
 class CLIConfig {
   Stream<List<int>>? source;
   FormatConfig? format;
@@ -64,6 +66,7 @@ class CLIConfig {
   }
 }
 
+/// Parses the cli arguments.
 Future<CLIConfig> processArguments(List<String> arguments) async {
 
   if(arguments.isEmpty){

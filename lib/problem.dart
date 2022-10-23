@@ -1,4 +1,5 @@
 
+// Represents a problem for a given instance.
 class Problem {
   double capacity;
   List<double> weights;

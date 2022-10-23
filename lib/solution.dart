@@ -3,6 +3,12 @@ import 'package:grasp_01_knapsack/problem.dart';
 
 const int ATTEMPTS_BY_ALTERNATIVE = 4;
 
+/// The core of all solution of this GRASP implementation.
+/// It encapsulates a list of boolean values which represents
+/// all the objects included in the knapsack.
+/// 
+/// It holds data about the problem and cache to speed up the
+/// calculations involved with grasp.
 class Solution {
   int oneCount = 0;
   double _weight = 0.0;
@@ -10,24 +16,22 @@ class Solution {
   List<bool> objects;
   Problem p;
 
+  // Raw constructor for Solutions.
   Solution(this.objects, this.p, {bool updateCache = true} ){
     if( updateCache ){
       refreshCache();
     }
   }
 
+  // Given a problem, returns a solution with no elements adapted to it.
   factory Solution.zeroesFromProblem(Problem p){
     // A raw solution is only a bunch of bool values.
     List<bool> raw = List.filled(p.length, false);
     return Solution(raw, p, updateCache: false);
   }
 
-  factory Solution.fromProblem(Problem p){
-    // A raw solution is only a bunch of bool values.
-    List<bool> raw = List.filled(p.length, false);
-    return Solution(raw, p);
-  }
-
+  /// Constructs a random solution depending on the problem.
+  /// Randomly fills some values with true.
   factory Solution.random(Problem p){
     const minimumPercent = 10.0;
     const maximumPercent = 90.0;
@@ -47,6 +51,8 @@ class Solution {
     return s;
   }
 
+  /// Constructs a random solution depending on the problem.
+  /// It fills the solution with near 50% true values.
   factory Solution.randomLegacy(Problem p){
     math.Random generator = math.Random();
     Solution s = Solution.zeroesFromProblem(p);
@@ -56,6 +62,7 @@ class Solution {
     return s;
   }
 
+  /// Copy/clone a solution and avoids cache recalculation.
   factory Solution.copy(Solution other){
     List<bool> raw = other.objects.toList();
     Solution s = Solution(raw, other.p, updateCache: false);
@@ -65,6 +72,7 @@ class Solution {
     return s;
   }
 
+  /// Gets a random index where objects[index] == true.
   int? randomIndexChoice(){
     if( oneCount < 0 ){
       return null;
@@ -81,6 +89,7 @@ class Solution {
     return index;
   }
 
+  /// Gets a random index where objects[index] == false.
   int? randomZeroIndexChoice(){
     if( oneCount == objects.length ){
       return null;
@@ -97,6 +106,7 @@ class Solution {
     return index;
   }
 
+  /// recalculates the weight and profit of the current solution.
   void refreshCache(){
       _weight = _calculateWeight();
       _profit = _calculateProfit();
@@ -129,7 +139,7 @@ class Solution {
     return profit;
   }
 
-  // double minimumValue(Problem p){
+  /// returns the minimum price.
   double minimumValue(){
     double minValue = double.infinity;
 
@@ -142,7 +152,7 @@ class Solution {
     return minValue;
   }
 
-  // double maximumValue(Problem p){
+  /// returns the maximum price.
   double maximumValue(){
     double maxValue = double.negativeInfinity;
 
@@ -159,6 +169,7 @@ class Solution {
     return oneCount > 0;
   }
 
+  /// Return permutations where two elements are swaped.
   Set<Solution> neighborhood(){
     final int limit = objects.length * ATTEMPTS_BY_ALTERNATIVE;
     Set<Solution> others = <Solution>{};
@@ -195,7 +206,7 @@ class Solution {
     return others;
   }
 
-
+  /// Selects those elements where we can add more elements.
   Set<Solution> neighborhoodLegacy(){
     Set<Solution> others = <Solution>{};
     Solution trip = Solution.copy(this);
@@ -263,6 +274,7 @@ class Solution {
     return objects[index];
   }
 
+  /// Sets a value in the internal data representation and updates cache
   void operator []=(int index, bool value){
     if( objects[index] && !value ){
       oneCount -= 1;
@@ -279,6 +291,8 @@ class Solution {
     objects[index] = value;
   }
 
+  /// Overrides the standard equals operator so this structure
+  /// can be compared inside Sets.
   @override
   bool operator ==(Object other){
     if (runtimeType != other.runtimeType){

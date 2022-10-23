@@ -1,8 +1,8 @@
 import 'dart:convert' as convert;
 import 'package:grasp_01_knapsack/problem.dart';
 
-/// Parse an stream and returns a Problem object.
-/// SEE ALSO: showHelp to see which format accepts this function.
+/// Parse a stream and returns a Problem object.
+/// SEE ALSO: `showHelp` to see which format accepts this function.
 Future<Problem> problemFromStream(Stream<List<int>> source) async {
   final RegExp intoWords = RegExp(r"\s");
   Stream<List<String>> stream = source.transform(convert.utf8.decoder)
